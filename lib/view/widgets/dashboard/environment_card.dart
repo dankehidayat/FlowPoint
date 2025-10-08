@@ -1,3 +1,4 @@
+// lib/views/widgets/dashboard/environment_card.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -7,6 +8,7 @@ class EnvironmentCard extends StatelessWidget {
   final IconData icon;
   final Color color;
   final bool isTabletLandscape;
+  final double screenHeight;
 
   const EnvironmentCard({
     super.key,
@@ -15,12 +17,14 @@ class EnvironmentCard extends StatelessWidget {
     required this.icon,
     required this.color,
     required this.isTabletLandscape,
+    required this.screenHeight, // Add this parameter
   });
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final bool isTablet = screenWidth >= 600;
+    final bool isLargeTablet = screenWidth >= 900;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color backgroundColor = isDark 
         ? _getDarkModeColor(color).withOpacity(0.15)
@@ -38,40 +42,44 @@ class EnvironmentCard extends StatelessWidget {
         ? _getDarkModeColor(color)
         : color;
 
-    // Special font sizes for temperature and humidity cards
+    // Special font sizes - Reduced for mobile
     double labelFontSize;
     double valueFontSize;
     double iconSize;
 
-    if (isTablet) {
-      // Tablet: Very large fonts for temperature and humidity
-      labelFontSize = isTabletLandscape ? 18 : 20;
-      valueFontSize = 42; // Very big font size for tablet temperature/humidity values
+    if (isLargeTablet) {
+      labelFontSize = isTabletLandscape ? 20 : 22;
+      valueFontSize = isTabletLandscape ? 42 : 46;
+      iconSize = isTabletLandscape ? 36 : 40;
+    } else if (isTablet) {
+      labelFontSize = isTabletLandscape ? 16 : 18;
+      valueFontSize = isTabletLandscape ? 36 : 40;
       iconSize = isTabletLandscape ? 32 : 36;
     } else {
-      // Mobile: Normal sizes but bold labels
+      // Mobile - Reduced sizes
+      final bool isTallScreen = screenHeight > 700;
       labelFontSize = isTabletLandscape ? 12 : 14;
-      valueFontSize = isTabletLandscape ? 14 : 16;
-      iconSize = isTabletLandscape ? 20 : 24;
+      valueFontSize = isTabletLandscape ? 20 : 24;
+      iconSize = isTabletLandscape ? 22 : 26;
     }
 
     return Container(
       constraints: isTabletLandscape 
           ? BoxConstraints(
-              minWidth: 100,
-              maxWidth: 180,
-              minHeight: isTablet ? 120 : 50,
-              maxHeight: isTablet ? 140 : 65,
+              minWidth: isLargeTablet ? 160 : 140,
+              maxWidth: isLargeTablet ? 220 : 200,
+              minHeight: isTablet ? (isLargeTablet ? 140 : 130) : 80,
+              maxHeight: isTablet ? (isLargeTablet ? 160 : 150) : 100,
             )
           : BoxConstraints(
-              minWidth: 120,
-              maxWidth: 300,
-              minHeight: isTablet ? 140 : 60,
-              maxHeight: isTablet ? 160 : 80,
+              minWidth: isLargeTablet ? 180 : (isTablet ? 160 : 140),
+              maxWidth: isLargeTablet ? 300 : (isTablet ? 280 : 240),
+              minHeight: isTablet ? (isLargeTablet ? 160 : 150) : 100,
+              maxHeight: isTablet ? (isLargeTablet ? 180 : 170) : 120,
             ),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: borderColor,
           width: 1,
@@ -86,12 +94,18 @@ class EnvironmentCard extends StatelessWidget {
       ),
       child: Padding(
         padding: isTabletLandscape 
-            ? EdgeInsets.symmetric(horizontal: 16, vertical: isTablet ? 20 : 8)
-            : EdgeInsets.symmetric(horizontal: 20, vertical: isTablet ? 24 : 12),
+            ? EdgeInsets.symmetric(
+                horizontal: isLargeTablet ? 16 : 12, 
+                vertical: isTablet ? (isLargeTablet ? 20 : 16) : 8
+              )
+            : EdgeInsets.symmetric(
+                horizontal: isLargeTablet ? 20 : (isTablet ? 16 : 12),
+                vertical: isTablet ? (isLargeTablet ? 24 : 20) : 12
+              ),
         child: Row(
           children: [
             Container(
-              padding: EdgeInsets.all(isTablet ? 12 : (isTabletLandscape ? 6 : 8)),
+              padding: EdgeInsets.all(isLargeTablet ? 12 : (isTablet ? 10 : 8)),
               decoration: BoxDecoration(
                 color: iconBackgroundColor,
                 shape: BoxShape.circle,
@@ -102,7 +116,7 @@ class EnvironmentCard extends StatelessWidget {
                 color: displayColor
               ),
             ),
-            SizedBox(width: isTablet ? 16 : (isTabletLandscape ? 10 : 12)),
+            SizedBox(width: isLargeTablet ? 16 : (isTablet ? 12 : 8)),
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -122,7 +136,7 @@ class EnvironmentCard extends StatelessWidget {
                     style: GoogleFonts.lato(
                       fontSize: valueFontSize,
                       fontWeight: FontWeight.bold,
-                      color: color,
+                      color: displayColor,
                     ),
                   ),
                 ],
