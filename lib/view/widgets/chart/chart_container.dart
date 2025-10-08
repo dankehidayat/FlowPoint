@@ -46,7 +46,7 @@ class ChartContainer extends StatelessWidget {
             height: 300,
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: LineChart(_buildChartData()),
+              child: LineChart(_buildChartData(context)),
             ),
           ),
         ],
@@ -54,7 +54,11 @@ class ChartContainer extends StatelessWidget {
     );
   }
 
-  LineChartData _buildChartData() {
+  LineChartData _buildChartData(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final gridColor = isDark ? Colors.white.withOpacity(0.1) : Colors.grey.withOpacity(0.3);
+    final textColor = isDark ? Colors.white.withOpacity(0.7) : Colors.grey;
+
     return LineChartData(
       gridData: FlGridData(
         show: true,
@@ -62,16 +66,22 @@ class ChartContainer extends StatelessWidget {
         horizontalInterval: ChartDataHelper.getGridInterval(data, chartType),
         getDrawingHorizontalLine: (value) {
           return FlLine(
-            color: Colors.grey.withOpacity(0.3),
+            color: gridColor,
             strokeWidth: 1,
           );
         },
       ),
       titlesData: FlTitlesData(
         show: true,
-        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        bottomTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles: const AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
+        topTitles: const AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
+        bottomTitles: const AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
         leftTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
@@ -84,7 +94,7 @@ class ChartContainer extends StatelessWidget {
                   value.toInt().toString(),
                   style: GoogleFonts.lato(
                     fontSize: 11,
-                    color: Colors.grey,
+                    color: textColor,
                   ),
                 ),
               );
@@ -98,7 +108,115 @@ class ChartContainer extends StatelessWidget {
       minY: ChartDataHelper.getMinY(data, chartType),
       maxY: ChartDataHelper.getMaxY(data, chartType),
       lineBarsData: _getLineBarsData(),
+      lineTouchData: LineTouchData(
+        enabled: true,
+        touchCallback: (FlTouchEvent event, LineTouchResponse? touchResponse) {},
+        handleBuiltInTouches: true,
+        touchTooltipData: LineTouchTooltipData(
+          // Replaces tooltipBgColor
+          getTooltipColor: (LineBarSpot touchedSpot) {
+            return Theme.of(context).colorScheme.surface.withOpacity(0.95);
+          },
+          // Replaces tooltipRoundedRadius
+          tooltipBorderRadius: BorderRadius.circular(8),
+          // Tooltip content
+          getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+            return touchedBarSpots.map((barSpot) {
+              final spotIndex = barSpot.spotIndex;
+              if (spotIndex >= data.length) {
+                return null;
+              }
+              
+              final sensorData = data[spotIndex];
+              final value = _getTooltipValue(sensorData, barSpot.barIndex);
+              final color = _getTooltipColor(barSpot.barIndex);
+              
+              return LineTooltipItem(
+                '', // Empty main text
+                TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+                children: [
+                  TextSpan(
+                    text: _formatTime(sensorData.timestamp),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                      fontWeight: FontWeight.normal,
+                    ),
+                  ),
+                  const TextSpan(text: '\n'),
+                  TextSpan(
+                    text: value,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
+                ],
+              );
+            }).toList();
+          },
+          // Tooltip styling
+          tooltipPadding: const EdgeInsets.all(8),
+          tooltipMargin: 6,
+          fitInsideHorizontally: true,
+          fitInsideVertically: true,
+          maxContentWidth: 150,
+        ),
+      ),
     );
+  }
+
+  String _getTooltipValue(SensorData data, int barIndex) {
+    switch (chartType) {
+      case 'temperature':
+        return barIndex == 0 
+            ? '${data.temperature.toStringAsFixed(1)}°C'
+            : '${data.humidity.toStringAsFixed(1)}%';
+      
+      case 'power':
+        switch (barIndex) {
+          case 0: return '${data.power.toStringAsFixed(1)} W';
+          case 1: return '${data.apparentPower.toStringAsFixed(1)} VA';
+          case 2: return '${data.reactivePower.toStringAsFixed(1)} VAR';
+          default: return '';
+        }
+      
+      case 'voltage':
+        return barIndex == 0
+            ? '${data.voltage.toStringAsFixed(1)} V'
+            : '${data.current.toStringAsFixed(2)} A';
+      
+      default: return '';
+    }
+  }
+
+  Color _getTooltipColor(int barIndex) {
+    switch (chartType) {
+      case 'temperature':
+        return barIndex == 0 ? Colors.red : Colors.blue;
+      
+      case 'power':
+        switch (barIndex) {
+          case 0: return Colors.green;
+          case 1: return Colors.orange;
+          case 2: return Colors.purple;
+          default: return Colors.black;
+        }
+      
+      case 'voltage':
+        return barIndex == 0 ? Colors.amber : Colors.cyan;
+      
+      default: return Colors.black;
+    }
+  }
+
+  String _formatTime(DateTime timestamp) {
+    return '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}:${timestamp.second.toString().padLeft(2, '0')}';
   }
 
   List<LineChartBarData> _getLineBarsData() {
@@ -113,6 +231,7 @@ class ChartContainer extends StatelessWidget {
             isStrokeCapRound: true,
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(show: false),
+            aboveBarData: BarAreaData(show: false),
           ),
           LineChartBarData(
             spots: ChartDataHelper.createHumiditySpots(data),
@@ -122,6 +241,7 @@ class ChartContainer extends StatelessWidget {
             isStrokeCapRound: true,
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(show: false),
+            aboveBarData: BarAreaData(show: false),
           ),
         ];
       
@@ -135,6 +255,7 @@ class ChartContainer extends StatelessWidget {
             isStrokeCapRound: true,
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(show: false),
+            aboveBarData: BarAreaData(show: false),
           ),
           LineChartBarData(
             spots: ChartDataHelper.createApparentPowerSpots(data),
@@ -144,6 +265,7 @@ class ChartContainer extends StatelessWidget {
             isStrokeCapRound: true,
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(show: false),
+            aboveBarData: BarAreaData(show: false),
           ),
           LineChartBarData(
             spots: ChartDataHelper.createReactivePowerSpots(data),
@@ -153,6 +275,7 @@ class ChartContainer extends StatelessWidget {
             isStrokeCapRound: true,
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(show: false),
+            aboveBarData: BarAreaData(show: false),
           ),
         ];
       
@@ -166,6 +289,7 @@ class ChartContainer extends StatelessWidget {
             isStrokeCapRound: true,
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(show: false),
+            aboveBarData: BarAreaData(show: false),
           ),
           LineChartBarData(
             spots: ChartDataHelper.createCurrentSpots(data),
@@ -175,6 +299,7 @@ class ChartContainer extends StatelessWidget {
             isStrokeCapRound: true,
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(show: false),
+            aboveBarData: BarAreaData(show: false),
           ),
         ];
       

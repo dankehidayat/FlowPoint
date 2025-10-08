@@ -141,4 +141,9 @@ class ChartDataHelper {
       default: return allData;
     }
   }
+
+  // Helper method to format time for tooltips
+  static String formatTime(DateTime timestamp) {
+    return '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}:${timestamp.second.toString().padLeft(2, '0')}';
+  }
 }
