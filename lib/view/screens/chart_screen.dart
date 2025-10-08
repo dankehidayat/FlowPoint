@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'sensor_provider.dart';
+import '../../providers/sensor_provider.dart';
+import '../../models/sensor_data.dart';
 import 'dart:math';
 
 class ChartScreen extends StatefulWidget {
@@ -15,8 +16,6 @@ class ChartScreen extends StatefulWidget {
 class _ChartScreenState extends State<ChartScreen> {
   String _selectedTimeRange = '1hour';
   String _selectedChartType = 'temperature';
-
-  // ... (keep all the existing spot creation methods the same)
 
   List<FlSpot> _createTemperatureSpots(List<SensorData> data) {
     return data.asMap().entries.map((entry) {
@@ -904,33 +903,6 @@ if (isTablet) {
           ),
         ],
       ),
-    );
-  }
-
-  void _showClearDataDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Clear Chart Data'),
-          content: const Text('Are you sure you want to clear all chart data? This action cannot be undone.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancel'),
-            ),
-            FilledButton.tonal(
-              onPressed: () {
-                context.read<SensorProvider>().clearChartData();
-                Navigator.of(context).pop();
-              },
-              child: const Text('Clear'),
-            ),
-          ],
-        );
-      },
     );
   }
 }
