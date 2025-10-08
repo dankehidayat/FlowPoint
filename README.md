@@ -132,11 +132,41 @@ flutter run
 
 ```
 lib/
-├── main.dart                 # Application entry point
-├── sensor_provider.dart # Data management & API calls
-├── theme_provider.dart  # Theme management
-├── dashboard_screen.dart # Main dashboard
-└── chart_screen.dart    # Data visualization
+├── main.dart                          # Application entry point
+├── models/
+│   └── sensor_data.dart              # Sensor data models
+├── providers/
+│   ├── sensor_provider.dart          # Sensor data management & API calls
+│   ├── settings_provider.dart        # Settings configuration management
+│   └── theme_provider.dart           # Theme management
+├── utils/                            # Utility classes & helpers
+├── view/
+│   ├── screens/
+│   │   ├── about_screen.dart         # About app information
+│   │   ├── appearance_screen.dart    # Appearance customization
+│   │   ├── chart_screen.dart         # Data visualization charts
+│   │   ├── dashboard_customization_screen.dart # Dashboard layout customization
+│   │   ├── dashboard_screen.dart     # Main dashboard
+│   │   └── settings_screen.dart      # App settings
+│   └── widgets/
+│       ├── chart/                    # Chart-related widgets
+│       │   ├── chart_container.dart
+│       │   ├── chart_data_helper.dart
+│       │   ├── chart_legend.dart
+│       │   ├── chart_type_selector.dart
+│       │   ├── stats_summary.dart
+│       │   └── time_range_selector.dart
+│       └── dashboard/                # Dashboard-specific widgets
+│           ├── environment_card.dart
+│           ├── environment_section.dart
+│           ├── gauge_environment_card.dart
+│           ├── last_updated_widget.dart
+│           ├── power_metrics_section.dart
+│           ├── power_quality_section.dart
+│           ├── sensor_card.dart
+│           ├── status_card.dart
+│           └── summary_card.dart
+└── main.dart
 ```
 
 ## 🔧 Configuration
