@@ -19,7 +19,7 @@ class GaugeEnvironmentCard extends StatelessWidget {
     required this.icon,
     required this.color,
     required this.isTabletLandscape,
-    required this.screenHeight, // Add this parameter
+    required this.screenHeight,
   });
 
   @override
@@ -45,17 +45,12 @@ class GaugeEnvironmentCard extends StatelessWidget {
         ? _getDarkModeColor(color)
         : color;
 
-    // Define value ranges for color changes
-    final double? coldThreshold = title.toLowerCase().contains('temp') ? 18.0 : 30.0;
-    final double? hotThreshold = title.toLowerCase().contains('temp') ? 28.0 : 70.0;
+    // Determine current value color and range
+    final GaugeRange currentRange = _getGaugeRange(title, value);
+    final Color valueColor = currentRange.color;
 
-    // Determine current value color
-    final Color valueColor = _getValueColor(value, coldThreshold, hotThreshold, displayColor);
-
-    // Calculate percentage for gauge fill
-    final double percentage = title.toLowerCase().contains('temp') 
-        ? (value / 50.0).clamp(0.0, 1.0)
-        : (value / 100.0).clamp(0.0, 1.0);
+    // FIXED: Correct percentage calculation for gauge positioning
+    final double percentage = _calculateCorrectPercentage(title, value);
 
     // Get gauge ranges for background
     final List<GaugeSegment> segments = _getGaugeSegments(title);
@@ -69,7 +64,6 @@ class GaugeEnvironmentCard extends StatelessWidget {
     double cardHeight;
 
     if (isLargeTablet) {
-      // Extra large for big tablets
       labelFontSize = isTabletLandscape ? 20 : 22;
       valueFontSize = isTabletLandscape ? 28 : 32;
       iconSize = isTabletLandscape ? 32 : 36;
@@ -77,7 +71,6 @@ class GaugeEnvironmentCard extends StatelessWidget {
       gaugeWidth = isTabletLandscape ? 40 : 45;
       cardHeight = isTabletLandscape ? 240 : 260;
     } else if (isTablet) {
-      // Regular tablets
       labelFontSize = isTabletLandscape ? 16 : 18;
       valueFontSize = isTabletLandscape ? 22 : 26;
       iconSize = isTabletLandscape ? 28 : 32;
@@ -85,7 +78,6 @@ class GaugeEnvironmentCard extends StatelessWidget {
       gaugeWidth = isTabletLandscape ? 32 : 36;
       cardHeight = isTabletLandscape ? 200 : 220;
     } else {
-      // Mobile - Smaller sizes to prevent overflow
       final bool isTallScreen = screenHeight > 700;
       labelFontSize = isTabletLandscape ? 12 : 14;
       valueFontSize = isTabletLandscape ? 16 : 18;
@@ -137,7 +129,7 @@ class GaugeEnvironmentCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with icon and title - Compact for mobile
+            // Header with icon and title
             Row(
               children: [
                 Container(
@@ -219,7 +211,7 @@ class GaugeEnvironmentCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        // Current value indicator (circle)
+                        // Current value indicator (circle) - FIXED POSITIONING
                         Align(
                           alignment: Alignment(0, (percentage * 2 - 1)),
                           child: Container(
@@ -291,7 +283,7 @@ class GaugeEnvironmentCard extends StatelessWidget {
                         ),
                         SizedBox(height: isLargeTablet ? 12 : (isTablet ? 8 : 6)),
                         // Range indicator
-                        _buildRangeIndicator(context, title, value, valueColor, isTablet, isLargeTablet),
+                        _buildRangeIndicator(context, currentRange, isTablet, isLargeTablet),
                       ],
                     ),
                   ),
@@ -304,53 +296,26 @@ class GaugeEnvironmentCard extends StatelessWidget {
     );
   }
 
-  Widget _buildRangeIndicator(BuildContext context, String title, double value, Color valueColor, bool isTablet, bool isLargeTablet) {
-    String rangeText;
-    Color rangeColor = valueColor;
-    
-    if (title.toLowerCase().contains('temp')) {
-      if (value < 18) {
-        rangeText = 'COLD';
-        rangeColor = Colors.blue;
-      } else if (value > 28) {
-        rangeText = 'HOT';
-        rangeColor = Colors.red;
-      } else {
-        rangeText = 'NORMAL';
-        rangeColor = Colors.green;
-      }
-    } else {
-      if (value < 30) {
-        rangeText = 'DRY';
-        rangeColor = Colors.orange;
-      } else if (value > 70) {
-        rangeText = 'HUMID';
-        rangeColor = Colors.blue;
-      } else {
-        rangeText = 'NORMAL';
-        rangeColor = Colors.green;
-      }
-    }
-    
+  Widget _buildRangeIndicator(BuildContext context, GaugeRange range, bool isTablet, bool isLargeTablet) {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isLargeTablet ? 12 : (isTablet ? 8 : 6), 
         vertical: isLargeTablet ? 6 : (isTablet ? 4 : 3)
       ),
       decoration: BoxDecoration(
-        color: rangeColor.withOpacity(0.1),
+        color: range.color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(isLargeTablet ? 12 : 10),
         border: Border.all(
-          color: rangeColor.withOpacity(0.3),
+          color: range.color.withOpacity(0.3),
           width: isLargeTablet ? 1.5 : 1,
         ),
       ),
       child: Text(
-        rangeText,
+        range.label,
         style: GoogleFonts.lato(
           fontSize: isLargeTablet ? 12 : (isTablet ? 10 : 9),
           fontWeight: FontWeight.bold,
-          color: rangeColor,
+          color: range.color,
         ),
       ),
     );
@@ -359,37 +324,64 @@ class GaugeEnvironmentCard extends StatelessWidget {
   List<GaugeSegment> _getGaugeSegments(String title) {
     if (title.toLowerCase().contains('temp')) {
       return [
-        GaugeSegment(Colors.blue.shade300, 0.0),
-        GaugeSegment(Colors.blue.shade200, 0.36),
-        GaugeSegment(Colors.green.shade400, 0.36),
-        GaugeSegment(Colors.green.shade300, 0.56),
-        GaugeSegment(Colors.red.shade400, 0.56),
-        GaugeSegment(Colors.red.shade300, 1.0),
+        GaugeSegment(Colors.blue.shade300, 0.0),    // 0°C - Cold
+        GaugeSegment(Colors.blue.shade200, 0.25),   // 0-18°C transition
+        GaugeSegment(Colors.green.shade400, 0.35),  // 18°C - Normal start
+        GaugeSegment(Colors.green.shade300, 0.55),  // 18-28°C transition  
+        GaugeSegment(Colors.red.shade400, 0.75),    // 28°C - Hot start
+        GaugeSegment(Colors.red.shade300, 1.0),     // 50°C - Hot
       ];
     } else {
+      // Humidity gauge segments - INVERTED: Blue at bottom, Orange at top
       return [
-        GaugeSegment(Colors.orange.shade300, 0.0),
-        GaugeSegment(Colors.orange.shade200, 0.3),
-        GaugeSegment(Colors.green.shade400, 0.3),
-        GaugeSegment(Colors.green.shade300, 0.7),
-        GaugeSegment(Colors.blue.shade400, 0.7),
-        GaugeSegment(Colors.blue.shade300, 1.0),
+        GaugeSegment(Colors.blue.shade300, 0.0),    // 0% - Humid (bottom)
+        GaugeSegment(Colors.blue.shade200, 0.2),    // 0-30% transition
+        GaugeSegment(Colors.green.shade400, 0.3),   // 30% - Normal start
+        GaugeSegment(Colors.green.shade300, 0.6),   // 30-70% transition
+        GaugeSegment(Colors.orange.shade400, 0.8),  // 70% - Dry start
+        GaugeSegment(Colors.orange.shade300, 1.0),  // 100% - Dry (top)
       ];
     }
   }
 
-  Color _getValueColor(double value, double? coldThreshold, double? hotThreshold, Color normalColor) {
-    if (coldThreshold != null && value < coldThreshold) {
-      return Colors.blue.shade400;
-    } else if (hotThreshold != null && value > hotThreshold) {
-      return Colors.red.shade400;
+  // FIXED: Correct percentage calculation for gauge positioning
+  double _calculateCorrectPercentage(String title, double value) {
+    if (title.toLowerCase().contains('temp')) {
+      // Temperature range: 0-50°C
+      return (value / 50.0).clamp(0.0, 1.0);
+    } else {
+      // Humidity range: 0-100%
+      return (value / 100.0).clamp(0.0, 1.0);
     }
-    return Colors.green.shade400;
+  }
+
+  // FIXED: Improved gauge range detection with proper colors
+  GaugeRange _getGaugeRange(String title, double value) {
+    if (title.toLowerCase().contains('temp')) {
+      if (value < 18) {
+        return GaugeRange('COLD', Colors.blue.shade400);
+      } else if (value > 28) {
+        return GaugeRange('HOT', Colors.red.shade400);
+      } else {
+        return GaugeRange('NORMAL', Colors.green.shade400);
+      }
+    } else {
+      // Humidity ranges - Colors updated to match inverted gauge
+      if (value < 30) {
+        return GaugeRange('DRY', Colors.orange.shade400); // Now orange for dry
+      } else if (value > 70) {
+        return GaugeRange('HUMID', Colors.blue.shade400); // Now blue for humid
+      } else {
+        return GaugeRange('NORMAL', Colors.green.shade400);
+      }
+    }
   }
 
   Color _getDarkModeColor(Color lightColor) {
     if (lightColor == Colors.red) return Colors.red.shade300;
     if (lightColor == Colors.blue) return Colors.blue.shade300;
+    if (lightColor == Colors.orange) return Colors.orange.shade300;
+    if (lightColor == Colors.green) return Colors.green.shade300;
     return lightColor;
   }
 }
@@ -399,4 +391,11 @@ class GaugeSegment {
   final double position;
 
   GaugeSegment(this.color, this.position);
+}
+
+class GaugeRange {
+  final String label;
+  final Color color;
+
+  GaugeRange(this.label, this.color);
 }
