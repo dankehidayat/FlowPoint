@@ -31,18 +31,21 @@ class SensorProvider with ChangeNotifier {
     try {
       // Fetch data from all virtual pins (V0 to V9)
       final List<Future<http.Response>> requests = [];
-      
+
       for (int i = 0; i <= 9; i++) {
-        final url = Uri.http('$_blynkServer:$_blynkPort', '/$_authToken/get/V$i');
+        final url = Uri.http(
+          '$_blynkServer:$_blynkPort',
+          '/$_authToken/get/V$i',
+        );
         requests.add(http.get(url));
       }
 
       final responses = await Future.wait(requests);
-      
+
       // Parse responses
       final Map<String, dynamic> sensorData = {};
       bool allSuccessful = true;
-      
+
       for (int i = 0; i < responses.length; i++) {
         final response = responses[i];
         if (response.statusCode == 200) {
@@ -65,19 +68,21 @@ class SensorProvider with ChangeNotifier {
         final newData = SensorData.fromBlynkJson(sensorData, true);
         _currentData = newData;
         _sensorHistory.add(newData);
-        
+
         // Add to chart data
-        _chartData.add(ChartData(
-          time: newData.timestamp,
-          temperature: newData.temperature,
-          humidity: newData.humidity,
-        ));
-        
+        _chartData.add(
+          ChartData(
+            time: newData.timestamp,
+            temperature: newData.temperature,
+            humidity: newData.humidity,
+          ),
+        );
+
         // Keep only last 100 readings for chart
         if (_chartData.length > 100) {
           _chartData.removeAt(0);
         }
-        
+
         // Keep only last 50 readings for history
         if (_sensorHistory.length > 50) {
           _sensorHistory.removeAt(0);
@@ -89,7 +94,6 @@ class SensorProvider with ChangeNotifier {
         final newData = SensorData.fromBlynkJson(sensorData, false);
         _currentData = newData;
       }
-
     } catch (e) {
       _error = 'Failed to connect to server: $e';
       print('Error fetching Blynk data: $e');
