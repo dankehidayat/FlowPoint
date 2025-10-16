@@ -37,9 +37,9 @@ dependency_overrides:
 flutter:
   uses-material-design: true
 flutter_launcher_icons:
-  android: true
+  android: "adaptive"
   ios: true
-  image_path: "assets/icon.png" # Your PNG file path
-  # Optional: different icons for platforms
-  # android: "assets/icon_android.png"
-  # ios: "assets/icon_ios.png"
+  remove_alpha_ios: true
+  image_path: "assets/icon.png" # The icon
+  adaptive_icon_foreground: "assets/icon_transparent.png"
+  adaptive_icon_background: "#1E88E5" # Blue background

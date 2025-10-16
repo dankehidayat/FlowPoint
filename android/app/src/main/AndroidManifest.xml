@@ -6,7 +6,7 @@
     <application
         android:label="FlowPoint"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/adaptive"
         android:usesCleartextTraffic="true">
         
         <activity

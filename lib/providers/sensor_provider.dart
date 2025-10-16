@@ -33,10 +33,8 @@ class SensorProvider with ChangeNotifier {
       final List<Future<http.Response>> requests = [];
 
       for (int i = 0; i <= 9; i++) {
-        final url = Uri.http(
-          '$_blynkServer:$_blynkPort',
-          '/$_authToken/get/V$i',
-        );
+        final url =
+            Uri.http('$_blynkServer:$_blynkPort', '/$_authToken/get/V$i');
         requests.add(http.get(url));
       }
 
@@ -70,13 +68,11 @@ class SensorProvider with ChangeNotifier {
         _sensorHistory.add(newData);
 
         // Add to chart data
-        _chartData.add(
-          ChartData(
-            time: newData.timestamp,
-            temperature: newData.temperature,
-            humidity: newData.humidity,
-          ),
-        );
+        _chartData.add(ChartData(
+          time: newData.timestamp,
+          temperature: newData.temperature,
+          humidity: newData.humidity,
+        ));
 
         // Keep only last 100 readings for chart
         if (_chartData.length > 100) {
